@@ -8,6 +8,7 @@ const path = require("path");
 const cookieParser = require("cookie-parser");
 const helmet = require("helmet");
 const csrf = require("csrf");
+const tokens = new csrf();
 
 const app = express();
 const port = 3000;
@@ -122,6 +123,15 @@ const checkAdminRole = (req, res, next) => {
     res.status(400).send("Invalid Token");
   }
 };
+
+app.get("/csrf", function (req, res) {
+  const token = tokens.create("OEKFNEZKkF78E");
+  res.status(200).send({
+    status: 200,
+    message: "CSRF récupéré",
+    token: token,
+  });
+});
 
 // Routes
 app.post("/api/signup", (req, res) => {
@@ -247,8 +257,24 @@ app.post(
   },
   checkAdminRole,
   (req, res) => {
-    const { marque, modele, immatriculation, annee, description, client_id } =
-      req.body;
+    const {
+      marque,
+      modele,
+      immatriculation,
+      annee,
+      description,
+      client_id,
+      csrfToken,
+    } = req.body;
+
+    console.log("MARQUE :", req.body.marque);
+    const secret = "OEKFNEZKkF78E";
+    console.log("TOKEN :", csrfToken);
+    console.log("TOKENS :", tokens.verify(secret, `${csrfToken}`));
+    if (!csrfToken || !tokens.verify(secret, `${csrfToken}`)) {
+      return res.status(403).send("Invalid CSRF Token");
+    }
+
     const sql =
       "INSERT INTO vehicles (marque, modele, immatriculation, annee, description, client_id) VALUES (?, ?, ?, ?, ?, ?)";
     db.query(

@@ -4,6 +4,7 @@ import "./AdminDashboard.css";
 const baseURI = import.meta.env.VITE_API_BASE_URL;
 
 const AdminDashboard = () => {
+  const [tokenCsrf, setTokenCsrf] = useState("");
   const [clientCount, setClientCount] = useState(0);
   const navigate = useNavigate();
 
@@ -82,9 +83,30 @@ const AdminDashboard = () => {
       }
     };
 
+    const fetchToken = async () => {
+      try {
+        const response = await fetch(baseURI + "csrf", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setTokenCsrf(data.token);
+        } else {
+          alert("Erreur lors de la récupération des clients");
+        }
+      } catch (error) {
+        alert("Erreur réseau");
+      }
+    };
+
     fetchClientCount();
     fetchVehicles();
     fetchClients();
+    fetchToken();
   }, []);
 
   const handleAddVehicle = async () => {
@@ -95,7 +117,7 @@ const AdminDashboard = () => {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify(newVehicle),
+        body: JSON.stringify({ ...newVehicle, csrfToken: tokenCsrf }),
       });
       if (response.ok) {
         setVehicles([...vehicles, newVehicle]);
